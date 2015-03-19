@@ -31,6 +31,13 @@
 var canvas = document.getElementById('c');
 var host = window.location.host;
 var context = canvas.getContext("2d");
+var background = new Image();
+background.src = "xpbliss.jpg";
+background.onload = function() {
+    context.drawImage(background,0,0);
+}
+var windowErr = new Image();
+windowErr.src = "windowerror.gif";
 var W = canvas.width  = window.innerWidth-6;
 var H = canvas.height = window.innerHeight-50;
 var wscounter = 0;
@@ -81,9 +88,10 @@ function clearFrame() {
 // This actually draws the frame
 function renderFrame() {
     clearFrame();
+    context.drawImage(background,0,0);
     for (var key in world) {
         var entity = world[key];
-        drawCircle(context,prepEntity(entity));
+        context.drawImage(windowErr,world[key]["x"],world[key]["y"]);
     }
 }
 
@@ -124,7 +132,9 @@ function getPosition(e) {
 function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
-    //XXX: Send a XHTML Request that updates the entity you just modified!
+    obj = {};
+    obj[entity] = data;
+    socket.send(JSON.stringify( obj));
 }
 var counter = 0;
 function addEntityWithoutName(data) {
@@ -254,18 +264,26 @@ function wsSetup() {
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
+        // I've decided to do nothing? :S
     };
     socket.onerror = function(msg) {
-        debug("WebSocket Error:" + msg.data);
+        //debug("WebSocket Error:" + msg.data);
     };
     socket.onmessage = function(msg) {  
         try {
             debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            //XXX: TODO What are you going to do here?
+            var parsedmsg = JSON.parse(msg.data);
+            for (key in parsedmsg){
+                world[key] = parsedmsg[key];
+            }
+            drawNextFrame();
         } catch (e) {
             alert("socket on message: " + e);
         }
     }; 
+
+    
 }
 
 wsSetup();
